@@ -1,150 +1,239 @@
-# Contributing to Spec Kit
+# Contributing to spec-kit-savage
 
-Hi there! We're thrilled that you'd like to contribute to Spec Kit. Contributions to this project are [released](https://help.github.com/articles/github-terms-of-service/#6-contributions-under-repository-license) to the public under the [project's open source license](LICENSE).
+## Overview
 
-Please note that this project is released with a [Contributor Code of Conduct](CODE_OF_CONDUCT.md). By participating in this project you agree to abide by its terms.
+This document outlines how to contribute customizations and improvements to spec-kit-savage.
 
-## Prerequisites for running and testing code
+## Before You Start
 
-These are one time installations required to be able to test your changes locally as part of the pull request (PR) submission process.
+1. **Review existing files**: Check `.specify/loaders/load-all-custom.sh` to see current customizations
+2. **Understand non-breaking**: Customizations must not break sync with upstream spec-kit
+3. **Check governance**: Review `.specify/memory/constitution.md` for repo policies
+4. **Test locally**: Ensure your changes work in your environment
 
-1. Install [Python 3.11+](https://www.python.org/downloads/)
-1. Install [uv](https://docs.astral.sh/uv/) for package management
-1. Install [Git](https://git-scm.com/downloads)
-1. Have an [AI coding agent available](README.md#-supported-ai-agents)
+## Adding Customizations
 
-<details>
-<summary><b>💡 Hint if you are using <code>VSCode</code> or <code>GitHub Codespaces</code> as your IDE</b></summary>
+### 1. Custom Templates
 
-<br>
+**Location**: `.specify/templates/`
 
-Provided you have [Docker](https://docker.com) installed on your machine, you can leverage [Dev Containers](https://containers.dev) through this [VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers), to easily set up your development environment, with aforementioned tools already installed and configured, thanks to the `.devcontainer/devcontainer.json` file (located at the root of the project).
+**Requirements**:
+- Markdown format (`.md` extension)
+- Clear documentation of purpose
+- No conflicts with spec-kit provided templates
 
-To do so, simply:
+**Example**:
+```bash
+cat > .specify/templates/custom-report-template.md << 'EOF'
+# Custom Report Template
 
-- Checkout the repo
-- Open it with VSCode
-- Open the [Command Palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette) and select "Dev Containers: Open Folder in Container..."
+(Your template content)
+EOF
+```
 
-On [GitHub Codespaces](https://github.com/features/codespaces) it's even simpler, as it leverages the `.devcontainer/devcontainer.json` automatically upon opening the codespace.
+**Validation**:
+```bash
+bash .specify/loaders/discover-templates.sh
+```
 
-</details>
+### 2. Testing Policies
 
-## Submitting a pull request
+**Location**: `.specify/memory/testing/`
 
-> [!NOTE]
-> If your pull request introduces a large change that materially impacts the work of the CLI or the rest of the repository (e.g., you're introducing new templates, arguments, or otherwise major changes), make sure that it was **discussed and agreed upon** by the project maintainers. Pull requests with large changes that did not have a prior conversation and agreement will be closed.
+**Requirements**:
+- Language-specific policies (e.g., `python.md`, `go.md`)
+- Include version table for amendment tracking
+- Define test runner, BDD framework, coverage requirements
+- Specify Makefile targets
 
-1. Fork and clone the repository
-1. Configure and install the dependencies: `uv sync`
-1. Make sure the CLI works on your machine: `uv run specify --help`
-1. Create a new branch: `git checkout -b my-branch-name`
-1. Make your change, add tests, and make sure everything still works
-1. Test the CLI functionality with a sample project if relevant
-1. Push to your fork and submit a pull request
-1. Wait for your pull request to be reviewed and merged.
+**Format**:
+```markdown
+# [Language] Testing Policy
 
-Here are a few things you can do that will increase the likelihood of your pull request being accepted:
+| **Version** | **Ratified** | **Last Amended** | **Amended By** |
+|-------------|--------------|------------------|----------------|
+| 1.0.0       | 2025-12-07   | 2025-12-07       | Your Name      |
 
-- Follow the project's coding conventions.
-- Write tests for new functionality.
-- Update documentation (`README.md`, `spec-driven.md`) if your changes affect user-facing features.
-- Keep your change as focused as possible. If there are multiple changes you would like to make that are not dependent upon each other, consider submitting them as separate pull requests.
-- Write a [good commit message](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
-- Test your changes with the Spec-Driven Development workflow to ensure compatibility.
+(Policy content)
+```
 
-## Development workflow
+**Validation**:
+```bash
+bash .specify/loaders/discover-policies.sh
+```
 
-When working on spec-kit:
+### 3. Agent Prompts
 
-1. Test changes with the `specify` CLI commands (`/speckit.specify`, `/speckit.plan`, `/speckit.tasks`) in your coding agent of choice
-2. Verify templates are working correctly in `templates/` directory
-3. Test script functionality in the `scripts/` directory
-4. Ensure memory files (`memory/constitution.md`) are updated if major process changes are made
+**Location**: 
+- `.github/prompts/` for GitHub Copilot and Roo
+- `.codex/prompts/` for Codex
 
-### Testing template and command changes locally
+**Naming**: `speckit.[command].[agent].md`
 
-Running `uv run specify init` pulls released packages, which won’t include your local changes.  
-To test your templates, commands, and other changes locally, follow these steps:
+**Requirements**:
+- Agent-specific instructions
+- Clear command purpose and usage
+- Reference to supporting materials
+- Output format specification
 
-1. **Create release packages**
+**Example**:
+```markdown
+# /version-update — GitHub Copilot
 
-   Run the following command to generate the local packages:
+## Command Purpose
 
-   ```bash
-   ./.github/workflows/scripts/create-release-packages.sh v1.0.0
-   ```
+(Your command spec)
+```
 
-2. **Copy the relevant package to your test project**
+**Validation**:
+```bash
+bash .specify/loaders/discover-prompts.sh copilot
+```
 
-   ```bash
-   cp -r .genreleases/sdd-copilot-package-sh/. <path-to-test-project>/
-   ```
+### 4. Governance Files
 
-3. **Open and test the agent**
+**Location**: `.specify/memory/`
 
-   Navigate to your test project folder and open the agent to verify your implementation.
+**Requirements**:
+- Version table at end of file (see version-update-guide.md)
+- Amendment tracking
+- Clear policy language
+- Markdown linting compliant
 
-## AI contributions in Spec Kit
+**Update versioning**:
+```bash
+/version-update your-governance-file.md --verify
+```
 
-> [!IMPORTANT]
->
-> If you are using **any kind of AI assistance** to contribute to Spec Kit,
-> it must be disclosed in the pull request or issue.
+## Commit Workflow
 
-We welcome and encourage the use of AI tools to help improve Spec Kit! Many valuable contributions have been enhanced with AI assistance for code generation, issue detection, and feature definition.
+### 1. Create Feature Branch
 
-That being said, if you are using any kind of AI assistance (e.g., agents, ChatGPT) while contributing to Spec Kit,
-**this must be disclosed in the pull request or issue**, along with the extent to which AI assistance was used (e.g., documentation comments vs. code generation).
+```bash
+git checkout -b feat/add-custom-something
+```
 
-If your PR responses or comments are being generated by an AI, disclose that as well.
+### 2. Make Changes
 
-As an exception, trivial spacing or typo fixes don't need to be disclosed, so long as the changes are limited to small parts of the code or short phrases.
+```bash
+# Add your custom file(s)
+mkdir -p .specify/templates
+echo "(content)" > .specify/templates/custom.md
+```
 
-An example disclosure:
+### 3. Validate
 
-> This PR was written primarily by GitHub Copilot.
+```bash
+# Test loader scripts
+bash .specify/loaders/load-all-custom.sh
 
-Or a more detailed disclosure:
+# Check markdown linting
+markdownlint .specify/templates/custom.md
 
-> I consulted ChatGPT to understand the codebase but the solution
-> was fully authored manually by myself.
+# Verify no breaking changes
+git diff
+```
 
-Failure to disclose this is first and foremost rude to the human operators on the other end of the pull request, but it also makes it difficult to
-determine how much scrutiny to apply to the contribution.
+### 4. Commit
 
-In a perfect world, AI assistance would produce equal or higher quality work than any human. That isn't the world we live in today, and in most cases
-where human supervision or expertise is not in the loop, it's generating code that cannot be reasonably maintained or evolved.
+```bash
+# Use conventional commits format
+git add .specify/templates/custom.md
+git commit -m "feat: Add custom-something template"
+```
 
-### What we're looking for
+### 5. Push and Create PR
 
-When submitting AI-assisted contributions, please ensure they include:
+```bash
+git push origin feat/add-custom-something
+# Create PR on GitHub
+```
 
-- **Clear disclosure of AI use** - You are transparent about AI use and degree to which you're using it for the contribution
-- **Human understanding and testing** - You've personally tested the changes and understand what they do
-- **Clear rationale** - You can explain why the change is needed and how it fits within Spec Kit's goals
-- **Concrete evidence** - Include test cases, scenarios, or examples that demonstrate the improvement
-- **Your own analysis** - Share your thoughts on the end-to-end developer experience
+## Amending Existing Customizations
 
-### What we'll close
+### 1. Make Changes
 
-We reserve the right to close contributions that appear to be:
+```bash
+vim .specify/templates/version-update-guide.md
+```
 
-- Untested changes submitted without verification
-- Generic suggestions that don't address specific Spec Kit needs
-- Bulk submissions that show no human review or understanding
+### 2. Update Version Table
 
-### Guidelines for success
+```bash
+/version-update .specify/templates/version-update-guide.md --verify
+```
 
-The key is demonstrating that you understand and have validated your proposed changes. If a maintainer can easily tell that a contribution was generated entirely by AI without human input or testing, it likely needs more work before submission.
+### 3. Commit
 
-Contributors who consistently submit low-effort AI-generated changes may be restricted from further contributions at the maintainers' discretion.
+```bash
+git add .specify/templates/version-update-guide.md
+git commit -m "Refs: TASK-### Amend version-update-guide for clarity"
+```
 
-Please be respectful to maintainers and disclose AI assistance.
+## Testing Your Changes
 
-## Resources
+### 1. Loader Scripts
 
-- [Spec-Driven Development Methodology](./spec-driven.md)
-- [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/)
-- [Using Pull Requests](https://help.github.com/articles/about-pull-requests/)
-- [GitHub Help](https://help.github.com)
+```bash
+# Verify your new file is discovered
+bash .specify/loaders/load-all-custom.sh
+```
+
+### 2. Markdown Linting
+
+```bash
+# Check for linting errors
+markdownlint .specify/templates/your-file.md
+```
+
+### 3. Integration
+
+```bash
+# If adding to arby repo, test in arby first
+cp .specify/templates/your-file.md /path/to/arby/.specify/templates/
+```
+
+## Syncing with Upstream
+
+Before creating a PR:
+
+```bash
+# Fetch upstream changes
+git fetch upstream main
+
+# Check for conflicts
+git merge upstream/main
+
+# If conflicts, resolve them
+bash .specify/loaders/load-all-custom.sh
+
+# Push updated branch
+git push origin feat/your-branch
+```
+
+## Proposing Changes to Upstream
+
+If your customization would benefit the official spec-kit:
+
+1. **Create PR on github/spec-kit**
+2. **Reference this repo** if the change originated here
+3. **Keep change non-breaking** for compatibility
+4. **Document thoroughly** for upstream maintainers
+
+## Review Process
+
+PRs will be reviewed for:
+
+- **Compatibility**: Don't break sync with upstream
+- **Quality**: Clear documentation and examples
+- **Linting**: Markdown passes linting checks
+- **Testing**: Loader scripts verify new files
+- **Governance**: Alignment with constitution.md
+
+## Questions?
+
+See:
+- [SAVAGE.md](SAVAGE.md) - Overview
+- [SYNCING.md](docs/SYNCING.md) - Sync workflow
+- [Loader scripts](.specify/loaders/README.md) - File discovery
+- [Version update guide](.specify/templates/version-update-guide.md) - Versioning
