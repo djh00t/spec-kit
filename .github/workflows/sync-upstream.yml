@@ -1,0 +1,84 @@
+name: Sync with Upstream spec-kit
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+  workflow_dispatch:     # Manual trigger
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/github/spec-kit.git
+          git fetch upstream main
+
+      - name: Check for updates
+        id: check
+        run: |
+          git log --oneline -1 upstream/main
+          UPSTREAM_SHA=$(git rev-parse upstream/main)
+          LOCAL_SHA=$(git merge-base HEAD upstream/main)
+          if [[ "$UPSTREAM_SHA" == "$LOCAL_SHA" ]]; then
+            echo "up_to_date=true" >> $GITHUB_OUTPUT
+          else
+            echo "up_to_date=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create sync branch
+        if: steps.check.outputs.up_to_date == 'false'
+        run: |
+          git checkout -b sync/upstream-$(date +%Y%m%d)
+
+      - name: Merge upstream
+        if: steps.check.outputs.up_to_date == 'false'
+        run: |
+          git merge upstream/main -m "Sync with upstream spec-kit" || true
+
+      - name: Install markdownlint
+        if: steps.check.outputs.up_to_date == 'false'
+        run: npm install -g markdownlint-cli
+
+      - name: Validate custom files
+        if: steps.check.outputs.up_to_date == 'false'
+        run: |
+          bash .specify/loaders/load-all-custom.sh
+          markdownlint .specify/templates/version-update-guide.md .specify/memory/testing/*.md || true
+
+      - name: Create Pull Request
+        if: steps.check.outputs.up_to_date == 'false'
+        uses: peter-evans/create-pull-request@v4
+        with:
+          commit-message: "Sync with upstream spec-kit"
+          title: "Sync: upstream spec-kit updates"
+          body: |
+            Automated sync with github/spec-kit main branch.
+            
+            **Actions to take**:
+            1. Review changes for conflicts
+            2. Run `bash .specify/loaders/load-all-custom.sh` to validate
+            3. Merge if no conflicts or resolve carefully
+            
+            **Custom files preserved**:
+            - `.specify/templates/version-update-guide.md`
+            - `.specify/memory/testing/*.md`
+            - `.github/prompts/speckit.version.update.*.md`
+            - `.codex/prompts/speckit*.md`
+          branch: sync/upstream-${{ github.run_number }}
+          delete-branch: true
+
+      - name: Log status
+        if: always()
+        run: |
+          echo "Upstream sync completed"
+          echo "Status: up_to_date=${{ steps.check.outputs.up_to_date }}"

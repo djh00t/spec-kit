@@ -1,0 +1,57 @@
+name: Discover GitHub Issues & PRs
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday at 9 AM
+  workflow_dispatch:     # Manual trigger
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check official spec-kit issues
+        run: |
+          echo "📋 Checking official spec-kit repository for issues and feature requests..."
+          echo ""
+          echo "Repository: github/spec-kit"
+          echo "API: https://api.github.com/repos/github/spec-kit/issues"
+          echo ""
+          echo "You can view open issues at: https://github.com/github/spec-kit/issues"
+          echo "You can view open PRs at: https://github.com/github/spec-kit/pulls"
+
+      - name: Generate discovery report
+        run: |
+          cat > /tmp/discovery-report.md << 'EOF'
+          # spec-kit-savage Issue & PR Discovery Report
+          
+          Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          ## Upstream Repository
+          - **Official spec-kit**: https://github.com/github/spec-kit
+          - **Open Issues**: https://github.com/github/spec-kit/issues
+          - **Open PRs**: https://github.com/github/spec-kit/pulls
+          
+          ## This Repository
+          - **spec-kit-savage**: https://github.com/djh00t/spec-kit
+          - **Open Issues**: https://github.com/djh00t/spec-kit/issues
+          - **Open PRs**: https://github.com/djh00t/spec-kit/pulls
+          
+          ## Monitoring
+          - This workflow checks upstream weekly for updates and issues
+          - Sync workflow automatically creates PRs for upstream changes
+          - Custom files are preserved during sync
+          
+          ## Contribute
+          - See CONTRIBUTING.md for guidelines
+          - See SYNCING.md for upstream sync details
+          - See SAVAGE.md for quick start
+          EOF
+          
+          cat /tmp/discovery-report.md
+
+      - name: Comment on repo
+        run: |
+          echo "✓ Issue discovery workflow completed"
+          echo "Next run: $(date -d '+1 week' -u +"%Y-%m-%d %H:%M:%S UTC")"

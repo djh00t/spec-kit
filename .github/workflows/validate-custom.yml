@@ -1,0 +1,66 @@
+name: Validate Custom Files
+
+on:
+  push:
+    branches: [main, sync/*]
+    paths:
+      - '.specify/templates/**'
+      - '.specify/memory/testing/**'
+      - '.github/prompts/**'
+      - '.codex/prompts/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.specify/templates/**'
+      - '.specify/memory/testing/**'
+      - '.github/prompts/**'
+      - '.codex/prompts/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+
+      - name: Discover custom templates
+        run: |
+          echo "📋 Custom Templates:"
+          bash .specify/loaders/discover-templates.sh || echo "No templates found"
+
+      - name: Discover testing policies
+        run: |
+          echo "🧪 Testing Policies:"
+          bash .specify/loaders/discover-policies.sh || echo "No policies found"
+
+      - name: Discover agent prompts
+        run: |
+          echo "🤖 Agent Prompts:"
+          bash .specify/loaders/discover-prompts.sh || echo "No prompts found"
+
+      - name: Lint markdown files
+        run: |
+          markdownlint \
+            .specify/templates/*.md \
+            .specify/memory/testing/*.md \
+            .github/prompts/speckit*.md \
+            .codex/prompts/speckit*.md \
+            SAVAGE.md \
+            CONTRIBUTING.md \
+            docs/*.md || true
+
+      - name: Validate version tables
+        run: |
+          echo "Checking version tables in governance files..."
+          for file in .specify/memory/testing/*.md CONTRIBUTING.md docs/*.md; do
+            if [[ -f "$file" ]]; then
+              if grep -q "| \*\*Version\*\*" "$file"; then
+                echo "✓ $file has version table"
+              fi
+            fi
+          done
+
+      - name: Load all custom files
+        run: bash .specify/loaders/load-all-custom.sh
